@@ -1,0 +1,240 @@
+{
+    "name": "GATITA CHAT (Optimizado)",
+    "nodes": [
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "ff262b2a-c922-487b-9e32-a92273a3179e",
+            "name": "OpenAI Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "position": [
+                704,
+                400
+            ],
+            "typeVersion": 1,
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "agent": "openAiFunctionsAgent",
+                "promptType": "define",
+                "text": "={{ $('When chat message received').item.json.chatInput }}",
+                "options": {
+                    "systemMessage": "Eres \"GatitaBot\", el asistente contable experto del holding \"Tu Gatita Loca\".\n\n📋 EMPRESAS DISPONIBLES:\n1. CASAZ\n2. ROBUSTA\n3. ARPINO\n4. CB\n\n📊 ESTRUCTURA DE DATOS (Google Sheets):\nCada empresa tiene las siguientes columnas:\n- FECHA: Fecha del movimiento (formato: \"10-ene\")\n- DESCRIPCION / DETALLE: Concepto del gasto/ingreso\n- INGRESO: Dinero que entra ($)\n- EGRESO: Dinero que sale ($)\n- SALDO: Balance actual ($)\n- CATEGORIA: Clasificación (Insumos, Arriendo, Sueldos, etc.)\n- COMENTARIO: Notas adicionales (puede contener fechas completas)\n\n🎯 REGLAS DE INTERACCIÓN:\n\n1. **Identificación de Empresa (CRÍTICO)**:\n   - Si el usuario NO menciona la empresa, pregunta: \"¿De qué empresa quieres la información? (CASAZ, ROBUSTA, ARPINO o CB)\"\n   - NO busques datos NI registres nada hasta tener la empresa confirmada\n   - NUNCA asumas la empresa, SIEMPRE pregunta si no está explícita\n\n2. **Búsquedas (Herramienta: search)**:\n   - Usa la herramienta \"search\" para consultar registros\n   - Puedes buscar por: conceptos (\"Luz\", \"Arriendo\"), categorías (\"Insumos\"), meses (\"Enero\", \"Marzo\"), o montos\n   - Si el usuario pide \"todo\", no envíes filter_desc (devolverá todos los registros)\n\n3. **Análisis de Datos (Herramienta: analyze)**:\n   - Usa la herramienta \"analyze\" para cálculos matemáticos (sumas, promedios, tendencias)\n   - Envía los datos crudos que obtuviste de \"search\", NO hagas cálculos tú mismo\n\n4. **Registro de Datos (Herramienta: register)** ⚠️ REGLAS CRÍTICAS:\n   \n   📝 ANTES de llamar a \"register\", DEBES VERIFICAR:\n   \n   a) **Empresa confirmada**:\n      - Si el usuario NO mencionó la empresa, pregunta: \"¿En qué empresa quieres registrar esto? (CASAZ, ROBUSTA, ARPINO o CB)\"\n      - NO llames a \"register\" sin tener sheet_name confirmado\n      - Valores válidos: \"CASAZ\", \"ROBUSTA\", \"ARPINO\", \"CB\" (exactamente así, en mayúsculas)\n   \n   b) **Fecha en formato correcto**:\n      - Formato requerido: \"DD-MMM\" (ej: \"10-ene\", \"25-mar\")\n      - Si el usuario dice \"10 de enero\", convierte a \"10-ene\"\n      - Si el usuario dice \"enero\", pregunta: \"¿Qué día de enero?\"\n      - Meses válidos: ene, feb, mar, abr, may, jun, jul, ago, sep, oct, nov, dic\n   \n   c) **Monto como número**:\n      - Si el usuario dice \"$50.000\", convierte a 50000 (sin símbolos, sin puntos, sin comas)\n      - Si el usuario dice \"cincuenta mil\", convierte a 50000\n   \n   d) **Tipo de movimiento**:\n      - Si dice \"gasto\", \"egreso\", \"pago\", \"compra\" → tipo: \"EGRESO\"\n      - Si dice \"ingreso\", \"cobro\", \"venta\" → tipo: \"INGRESO\"\n   \n   e) **Confirmación del usuario**:\n      - SIEMPRE pregunta: \"¿Confirmas que quieres [CREAR/ACTUALIZAR/MARCAR] este registro?\"\n      - Muestra un resumen claro de lo que vas a hacer\n      - Solo ejecuta si el usuario confirma explícitamente (\"Sí\", \"Confirmo\", \"Dale\", \"Ok\", etc.)\n      - Si dice \"No\" o duda, NO ejecutes la herramienta\n\n   📋 EJEMPLO DE LLAMADA CORRECTA:\n   ```\n   register({\n     sheet_name: \"CASAZ\",\n     accion: \"CREAR\",\n     datos: {\n       fecha: \"10-ene\",\n       descripcion: \"Arriendo\",\n       tipo: \"EGRESO\",\n       monto: 50000,\n       categoria: \"Arriendo\",\n       comentario: \"Pago mensual\"\n     }\n   })\n   ```\n\n5. **Formato de Respuestas**:\n   - Presenta los datos en tablas Markdown cuando sean múltiples registros\n   - Usa emojis para hacer las respuestas más amigables: 💰 (dinero), 📊 (análisis), ✅ (éxito), ⚠️ (alerta)\n   - Siempre incluye el TOTAL cuando muestres gastos/ingresos\n\n6. **Ejemplo de Interacción Ideal (Búsqueda)**:\n   Usuario: \"Gastos de luz en enero\"\n   Tú piensas: ¿Falta la empresa?\n   Tú respondes: \"¿De qué empresa quieres ver los gastos de luz? (CASAZ, ROBUSTA, ARPINO o CB)\"\n   \n   Usuario: \"CASAZ\"\n   Tú usas: search(sheet_name=\"CASAZ\", filter_desc=\"luz enero\")\n   Tú respondes con los datos formateados\n\n7. **Ejemplo de Interacción Ideal (Registro)**:\n   Usuario: \"Registra el arriendo de enero\"\n   Tú: \"¿De qué empresa? (CASAZ, ROBUSTA, ARPINO o CB)\"\n   Usuario: \"CASAZ\"\n   Tú: \"¿Cuál fue el monto y la fecha exacta?\"\n   Usuario: \"$500.000 el 5 de enero\"\n   Tú: \"¿Confirmas que quieres CREAR este registro?\n   📋 Detalles:\n   - Empresa: CASAZ\n   - Fecha: 05-ene\n   - Concepto: Arriendo\n   - Tipo: EGRESO\n   - Monto: $500.000\"\n   \n   Usuario: \"Sí\"\n   Tú usas: register(sheet_name=\"CASAZ\", accion=\"CREAR\", datos={fecha: \"05-ene\", descripcion: \"Arriendo\", tipo: \"EGRESO\", monto: 500000, categoria: \"Arriendo\"})\n   Tú respondes: \"✅ Registro creado exitosamente en CASAZ\"\n\n💡 IMPORTANTE:\n- Siempre sé amable y profesional\n- Si no encuentras datos, sugiere alternativas (\"¿Quisiste decir 'Electricidad'?\")\n- Si hay muchos resultados, pregunta si quiere un análisis (suma total, promedio, etc.)\n- NUNCA modifiques datos sin confirmación explícita del usuario\n- NUNCA llames a \"register\" sin tener sheet_name, accion y datos completos",
+                    "maxIterations": 10
+                }
+            },
+            "id": "29b8f667-a812-44da-b611-26f67bd01158",
+            "name": "AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                944,
+                128
+            ],
+            "typeVersion": 1.6
+        },
+        {
+            "parameters": {
+                "sessionIdType": "customKey",
+                "sessionKey": "={{ $('When chat message received').item.json.sessionId }}"
+            },
+            "id": "769735d5-9270-4a4f-bfc3-41ceeffdacb1",
+            "name": "Window Buffer Memory",
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "position": [
+                864,
+                400
+            ],
+            "typeVersion": 1.3
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "587a67c1-4176-4d71-9435-666d88cd42f7",
+            "name": "When chat message received",
+            "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+            "position": [
+                720,
+                128
+            ],
+            "webhookId": "abf9ab75-eaca-4b91-b3ba-c0f83d3daba4",
+            "typeVersion": 1.1
+        },
+        {
+            "parameters": {
+                "name": "search",
+                "description": "Busca registros de pagos en Google Sheets del holding Tu Gatita Loca.\n\n📋 PARÁMETROS REQUERIDOS:\n- sheet_name: Nombre exacto de la empresa (CASAZ, ROBUSTA, ARPINO o CB)\n- filter_desc: (OPCIONAL) Término de búsqueda. Ejemplos:\n  · \"Luz\" → busca gastos de luz\n  · \"Enero\" → busca movimientos de enero\n  · \"Sueldos\" → busca pagos de sueldos\n  · Dejar vacío → devuelve TODOS los registros de la empresa\n\n✅ SALIDA:\nDevuelve un JSON con array de registros encontrados. Cada registro incluye:\n- FECHA, DESCRIPCION / DETALLE, INGRESO, EGRESO, SALDO, CATEGORIA, COMENTARIO\n\n💡 CONSEJO:\nSi el usuario pide \"todo\" o \"todos los gastos\", NO envíes filter_desc.",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "NHngBgZ3GCrfj0SN",
+                    "mode": "list",
+                    "cachedResultUrl": "/workflow/NHngBgZ3GCrfj0SN",
+                    "cachedResultName": "HERRAMIENTAS GATITA"
+                },
+                "fields": {
+                    "values": [
+                        {
+                            "name": "command",
+                            "stringValue": "search"
+                        }
+                    ]
+                },
+                "specifyInputSchema": true,
+                "schemaType": "manual",
+                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"sheet_name\": {\n      \"type\": \"string\",\n      \"enum\": [\"CASAZ\", \"ROBUSTA\", \"ARPINO\", \"CB\"],\n      \"description\": \"Nombre exacto de la empresa a consultar (OBLIGATORIO)\"\n    },\n    \"filter_desc\": {\n      \"type\": \"string\",\n      \"description\": \"Término de búsqueda (conceptos, meses, categorías). Dejar vacío para obtener todos los registros.\"\n    }\n  },\n  \"required\": [\"sheet_name\"]\n}"
+            },
+            "id": "9afab386-feb7-44aa-a600-1ee4fa6a7118",
+            "name": "Search records",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "position": [
+                1008,
+                400
+            ],
+            "typeVersion": 1.2
+        },
+        {
+            "parameters": {
+                "name": "analyze",
+                "description": "Procesa y analiza datos de pagos usando Python (Code Interpreter de OpenAI).\n\n📊 USO:\n- Cálculos matemáticos (promedios, sumas, tendencias)\n- Generación de gráficos (barras, líneas, pie charts)\n- Análisis de patrones (gastos recurrentes, comparaciones mensuales)\n\n📋 PARÁMETROS:\n- request: Descripción clara de lo que quieres hacer\n  Ejemplos: \"Calcular el total de egresos\", \"Generar gráfico de gastos por categoría\", \"Comparar ingresos de enero vs febrero\"\n- data: Datos crudos en formato JSON string (usa JSON.stringify de los resultados de 'search')\n\n✅ SALIDA:\n- Texto con el resultado del análisis\n- (Opcional) Enlace a imagen de gráfico generado\n\n⚠️ IMPORTANTE:\n- Envía los datos CRUDOS que obtuviste de 'search'\n- NO hagas cálculos por tu cuenta, deja que Python lo haga\n- Si hay muchos datos (>100 registros), pregunta primero al usuario qué análisis específico quiere",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "NHngBgZ3GCrfj0SN",
+                    "mode": "list",
+                    "cachedResultUrl": "/workflow/NHngBgZ3GCrfj0SN",
+                    "cachedResultName": "HERRAMIENTAS GATITA"
+                },
+                "fields": {
+                    "values": [
+                        {
+                            "name": "command",
+                            "stringValue": "code"
+                        }
+                    ]
+                },
+                "specifyInputSchema": true,
+                "schemaType": "manual",
+                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"request\": {\n      \"type\": \"string\",\n      \"description\": \"Descripción de la operación a realizar (ej: 'Calcular promedio de egresos', 'Generar gráfico de barras por categoría')\"\n    },\n    \"data\": {\n      \"type\": \"string\",\n      \"description\": \"Datos en formato JSON string (usa JSON.stringify del resultado de 'search')\"\n    }\n  },\n  \"required\": [\"request\", \"data\"]\n}"
+            },
+            "id": "342ef631-a6a3-4d07-a01e-38e2a22d764e",
+            "name": "Analyze data with code",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "position": [
+                1136,
+                400
+            ],
+            "typeVersion": 1.2
+        },
+        {
+            "parameters": {
+                "name": "register",
+                "description": "Registra, actualiza o marca registros en Google Sheets del holding Tu Gatita Loca.\n\n📋 ACCIONES DISPONIBLES:\n\n1️⃣ CREAR - Registrar un nuevo pago/gasto:\n   - FOLIO: Número de folio\n   - RUT: RUT del proveedor (formato: 12345678-9)\n   - RAZON SOCIAL: Nombre del proveedor/cliente\n   - SALDO PENDIENTE: Monto sin símbolos (ej: 500000)\n   - COMENTARIO: (Opcional) Comentarios adicionales\n   - GLOSA: (Opcional) Categoría o glosa\n\n2️⃣ ACTUALIZAR - Modificar campos de un registro existente:\n   - Requiere filtro.razon_social para buscar el registro\n   - Puede actualizar: COMENTARIO, GLOSA, SALDO PENDIENTE\n\n3️⃣ MARCAR_PAGADO - Agregar \"✅ PROCESADO\" al comentario:\n   - Requiere filtro.razon_social para buscar el registro\n\n✅ SALIDA:\nDevuelve confirmación de la operación realizada.",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "NHngBgZ3GCrfj0SN",
+                    "mode": "list",
+                    "cachedResultUrl": "/workflow/NHngBgZ3GCrfj0SN",
+                    "cachedResultName": "HERRAMIENTAS GATITA"
+                },
+                "fields": {
+                    "values": [
+                        {
+                            "name": "command",
+                            "stringValue": "register"
+                        }
+                    ]
+                },
+                "specifyInputSchema": true,
+                "schemaType": "manual",
+                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"sheet_name\": {\n      \"type\": \"string\",\n      \"enum\": [\"CASAZ\", \"ROBUSTA\", \"ARPINO\", \"CB\"],\n      \"description\": \"Nombre exacto de la empresa (OBLIGATORIO)\"\n    },\n    \"accion\": {\n      \"type\": \"string\",\n      \"enum\": [\"CREAR\", \"ACTUALIZAR\", \"MARCAR_PAGADO\"],\n      \"description\": \"Acción a realizar (OBLIGATORIO)\"\n    },\n    \"FOLIO\": {\n      \"type\": \"string\",\n      \"description\": \"Número de folio (solo para CREAR)\"\n    },\n    \"RUT\": {\n      \"type\": \"string\",\n      \"description\": \"RUT del proveedor/cliente formato 12345678-9 (solo para CREAR)\"\n    },\n    \"RAZON SOCIAL\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre o razón social del proveedor/cliente (para CREAR o buscar en ACTUALIZAR/MARCAR)\"\n    },\n    \"SALDO PENDIENTE\": {\n      \"type\": \"number\",\n      \"description\": \"Monto del saldo pendiente sin símbolos (solo para CREAR)\"\n    },\n    \"COMENTARIO\": {\n      \"type\": \"string\",\n      \"description\": \"Comentarios adicionales (opcional)\"\n    },\n    \"GLOSA\": {\n      \"type\": \"string\",\n      \"description\": \"Glosa o categoría (opcional)\"\n    }\n  },\n  \"required\": [\"sheet_name\", \"accion\"]\n}"
+            },
+            "id": "8c7e7c6b-1a5e-4e5e-9e5e-7c6b1a5e5e5e",
+            "name": "Register/Update records",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "position": [
+                1008,
+                640
+            ],
+            "typeVersion": 1.2
+        }
+    ],
+    "connections": {
+        "OpenAI Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Window Buffer Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "When chat message received": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Search records": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze data with code": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Register/Update records": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": []
+}

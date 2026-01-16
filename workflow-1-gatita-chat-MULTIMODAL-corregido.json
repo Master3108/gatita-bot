@@ -1,0 +1,629 @@
+{
+    "name": "GATITA CHAT (Multimodal - Corregido)",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "position": [
+                -800,
+                400
+            ],
+            "webhookId": "e99cb2da-9751-49c3-b99d-3142fde0d353",
+            "typeVersion": 1.2,
+            "credentials": {
+                "telegramApi": {
+                    "id": "qqpRPlwTnZveLZ83",
+                    "name": "registro pago erika tu gatita loca"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "cond_text",
+                                        "leftValue": "={{ $json.message.text }}",
+                                        "rightValue": "",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "exists",
+                                            "singleValue": true
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "TEXTO"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "cond_voice",
+                                        "leftValue": "={{ $json.message.voice }}",
+                                        "rightValue": "",
+                                        "operator": {
+                                            "type": "object",
+                                            "operation": "exists",
+                                            "singleValue": true
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "AUDIO"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "cond_photo",
+                                        "leftValue": "={{ $json.message.photo }}",
+                                        "rightValue": "",
+                                        "operator": {
+                                            "type": "array",
+                                            "operation": "exists",
+                                            "singleValue": true
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "IMAGEN"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "cond_doc",
+                                        "leftValue": "={{ $json.message.document }}",
+                                        "rightValue": "",
+                                        "operator": {
+                                            "type": "object",
+                                            "operation": "exists",
+                                            "singleValue": true
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "DOCUMENTO"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.4,
+            "position": [
+                -560,
+                400
+            ],
+            "id": "switch-clasificador",
+            "name": "Switch Clasificador"
+        },
+        {
+            "parameters": {
+                "resource": "file",
+                "fileId": "={{ $json.message.voice.file_id }}",
+                "additionalFields": {}
+            },
+            "id": "get-voice",
+            "name": "Get Voice",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                -320,
+                240
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "qqpRPlwTnZveLZ83",
+                    "name": "registro pago erika tu gatita loca"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "audio",
+                "operation": "transcribe",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.8,
+            "position": [
+                -80,
+                240
+            ],
+            "id": "transcribe-audio",
+            "name": "Transcribe Audio",
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "file",
+                "fileId": "={{ $json.message.photo[0].file_id }}",
+                "additionalFields": {}
+            },
+            "id": "get-image",
+            "name": "Get Image",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                -320,
+                480
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "qqpRPlwTnZveLZ83",
+                    "name": "registro pago erika tu gatita loca"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4o-mini",
+                    "mode": "list",
+                    "cachedResultName": "gpt-4o-mini"
+                },
+                "builtInTools": {},
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.3,
+            "position": [
+                -80,
+                640
+            ],
+            "id": "openai-vision-model",
+            "name": "OpenAI Vision Model",
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "Analiza la imagen adjunta.\n\nTAREA:\nExtrae los siguientes datos visibles:\n1. Proveedor/Razón Social\n2. Fecha (formato DD-MM-YYYY)\n3. Monto Total (solo números)\n4. N° de Documento (Folio/Factura)\n\nREGLAS:\n- Si un dato no aparece, devuelve \"No disponible\"\n- NO inventes información\n- Devuelve en formato: Proveedor: X, Fecha: Y, Monto: Z, Documento: W",
+                "options": {
+                    "systemMessage": "Eres un sistema OCR especializado en leer comprobantes de pago chilenos."
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3.1,
+            "position": [
+                -80,
+                480
+            ],
+            "id": "ai-vision-agent",
+            "name": "AI Vision Agent"
+        },
+        {
+            "parameters": {
+                "resource": "file",
+                "fileId": "={{ $json.message.document.file_id }}",
+                "additionalFields": {}
+            },
+            "id": "get-pdf",
+            "name": "Get PDF",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                -320,
+                720
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "qqpRPlwTnZveLZ83",
+                    "name": "registro pago erika tu gatita loca"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "pdf",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.extractFromFile",
+            "typeVersion": 1.1,
+            "position": [
+                -80,
+                720
+            ],
+            "id": "extract-pdf",
+            "name": "Extract PDF"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "user-input",
+                            "name": "chatInput",
+                            "value": "={{ $json.message?.text || $json.text || $json.output || \"Archivo procesado\" }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "session-id",
+                            "name": "sessionId",
+                            "value": "={{ $json.message?.chat?.id || 'default' }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "unificar-entrada",
+            "name": "Unificar Entrada",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                160,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "agent": "openAiFunctionsAgent",
+                "promptType": "define",
+                "text": "={{ $json.chatInput }}",
+                "options": {
+                    "systemMessage": "Eres \"GatitaBot\", el asistente contable experto del holding \"Tu Gatita Loca\".\n\n📋 EMPRESAS DISPONIBLES:\n1. CASAZ\n2. ROBUSTA\n3. ARPINO\n4. CB\n\n📊 ESTRUCTURA DE DATOS (Google Sheets):\nCada empresa tiene las siguientes columnas:\n- FOLIO: Número de folio del registro (OPCIONAL)\n- RUT: RUT del proveedor/cliente (OPCIONAL)\n- RAZON SOCIAL: Nombre o razón social del proveedor/cliente (REQUERIDO)\n- SALDO PENDIENTE: Monto del saldo pendiente (REQUERIDO)\n- COMENTARIO: Notas o comentarios adicionales (OPCIONAL)\n- GLOSA: Categoría o glosa del registro (OPCIONAL)\n\n🎯 REGLAS DE INTERACCIÓN:\n\n1. **Identificación de Empresa (CRÍTICO)**:\n   - Si el usuario NO menciona la empresa, pregunta: \"¿De qué empresa? (CASAZ, ROBUSTA, ARPINO o CB)\"\n   - NO registres nada hasta tener la empresa confirmada\n\n2. **Búsquedas (Herramienta: search)**:\n   - Usa la herramienta \"search\" para consultar registros\n   - Puedes buscar por: razón social, RUT, folio, glosa, comentarios\n\n3. **Registro de Datos (Herramienta: register)** ⚠️ REGLAS CRÍTICAS:\n   \n   a) **Campos REQUERIDOS**:\n      - sheet_name: Empresa (CASAZ, ROBUSTA, ARPINO, CB)\n      - accion: CREAR\n      - RAZON SOCIAL: Nombre del proveedor/cliente\n      - SALDO PENDIENTE: Monto (convierte \"$50.000\" a 50000)\n   \n   b) **Campos OPCIONALES** (NO preguntes si el usuario no los menciona):\n      - FOLIO: Si el usuario NO lo menciona, envía vacío (\"\")\n      - RUT: Si el usuario NO lo menciona, envía vacío (\"\")\n      - COMENTARIO: Si el usuario NO lo menciona, envía vacío (\"\")\n      - GLOSA: Si el usuario NO lo menciona, envía vacío (\"\")\n   \n   c) **Confirmación del usuario**:\n      - Muestra un resumen de lo que vas a registrar\n      - Pregunta: \"¿Confirmas que quieres CREAR este registro?\"\n      - Solo ejecuta si el usuario confirma (\"Sí\", \"Confirmo\", \"Dale\", \"Ok\")\n\n💡 IMPORTANTE:\n- NUNCA pidas FOLIO, RUT, COMENTARIO o GLOSA si el usuario no los menciona\n- Solo pide RAZON SOCIAL y SALDO PENDIENTE\n- Envía campos vacíos (\"\") para los opcionales no proporcionados\n- SIEMPRE confirma antes de registrar",
+                    "maxIterations": 15
+                }
+            },
+            "id": "ai-agent-main",
+            "name": "AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                400,
+                400
+            ],
+            "typeVersion": 1.6
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "openai-chat-model",
+            "name": "OpenAI Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "position": [
+                400,
+                560
+            ],
+            "typeVersion": 1,
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "sessionIdType": "customKey",
+                "sessionKey": "={{ $json.sessionId }}"
+            },
+            "id": "window-buffer-memory",
+            "name": "Window Buffer Memory",
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "position": [
+                400,
+                720
+            ],
+            "typeVersion": 1.3
+        },
+        {
+            "parameters": {
+                "name": "search",
+                "description": "Busca registros de pagos en Google Sheets.",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "NHngBgZ3GCrfj0SN",
+                    "mode": "list",
+                    "cachedResultName": "HERRAMIENTAS GATITA"
+                },
+                "fields": {
+                    "values": [
+                        {
+                            "name": "command",
+                            "stringValue": "search"
+                        }
+                    ]
+                },
+                "specifyInputSchema": true,
+                "schemaType": "manual",
+                "inputSchema": "{\"type\":\"object\",\"properties\":{\"sheet_name\":{\"type\":\"string\",\"enum\":[\"CASAZ\",\"ROBUSTA\",\"ARPINO\",\"CB\"]},\"filter_desc\":{\"type\":\"string\"}},\"required\":[\"sheet_name\"]}"
+            },
+            "id": "tool-search",
+            "name": "Search records",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "position": [
+                640,
+                320
+            ],
+            "typeVersion": 1.2
+        },
+        {
+            "parameters": {
+                "name": "register",
+                "description": "Registra, actualiza o marca registros en Google Sheets.",
+                "workflowId": {
+                    "__rl": true,
+                    "value": "NHngBgZ3GCrfj0SN",
+                    "mode": "list",
+                    "cachedResultName": "HERRAMIENTAS GATITA"
+                },
+                "fields": {
+                    "values": [
+                        {
+                            "name": "command",
+                            "stringValue": "register"
+                        }
+                    ]
+                },
+                "specifyInputSchema": true,
+                "schemaType": "manual",
+                "inputSchema": "{\"type\":\"object\",\"properties\":{\"sheet_name\":{\"type\":\"string\",\"enum\":[\"CASAZ\",\"ROBUSTA\",\"ARPINO\",\"CB\"]},\"accion\":{\"type\":\"string\",\"enum\":[\"CREAR\",\"ACTUALIZAR\",\"MARCAR_PAGADO\"]},\"FOLIO\":{\"type\":\"string\"},\"RUT\":{\"type\":\"string\"},\"RAZON SOCIAL\":{\"type\":\"string\"},\"SALDO PENDIENTE\":{\"type\":\"number\"},\"COMENTARIO\":{\"type\":\"string\"},\"GLOSA\":{\"type\":\"string\"}},\"required\":[\"sheet_name\",\"accion\"]}"
+            },
+            "id": "tool-register",
+            "name": "Register records",
+            "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+            "position": [
+                640,
+                480
+            ],
+            "typeVersion": 1.2
+        },
+        {
+            "parameters": {
+                "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                "text": "={{ $json.output }}",
+                "additionalFields": {}
+            },
+            "id": "send-telegram-response",
+            "name": "Send Telegram Response",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1.2,
+            "position": [
+                640,
+                400
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "qqpRPlwTnZveLZ83",
+                    "name": "registro pago erika tu gatita loca"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Switch Clasificador",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Switch Clasificador": {
+            "main": [
+                [
+                    {
+                        "node": "Unificar Entrada",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get Voice",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get Image",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Voice": {
+            "main": [
+                [
+                    {
+                        "node": "Transcribe Audio",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Transcribe Audio": {
+            "main": [
+                [
+                    {
+                        "node": "Unificar Entrada",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Image": {
+            "main": [
+                [
+                    {
+                        "node": "AI Vision Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Vision Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Unificar Entrada",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Extract PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Unificar Entrada",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Unificar Entrada": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Send Telegram Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Vision Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Vision Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Window Buffer Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Search records": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Register records": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

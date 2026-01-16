@@ -1,0 +1,1150 @@
+{
+    "name": "HERRAMIENTAS GATITA (Optimizado + Registro)",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "53cf336f-d9ee-4d08-9929-7270378d0a89",
+            "name": "Execute Workflow Trigger",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "position": [
+                500,
+                400
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('Execute Workflow Trigger').item.json.command }}",
+                                        "rightValue": "search"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "search"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('Execute Workflow Trigger').item.json.command }}",
+                                        "rightValue": "code"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "code"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('Execute Workflow Trigger').item.json.command }}",
+                                        "rightValue": "register"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "register"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "4a098506-4b67-4e44-8c40-afa51969d32d",
+            "name": "Route by Command",
+            "type": "n8n-nodes-base.switch",
+            "position": [
+                700,
+                400
+            ],
+            "typeVersion": 3.2
+        },
+        {
+            "parameters": {
+                "documentId": {
+                    "__rl": true,
+                    "value": "19yF1yOKLuhuQTXQdfWZhzz88HqOfAcDjR7iqY12hN4c",
+                    "mode": "list",
+                    "cachedResultName": "REGISTRO DE PAGOS TU GATITA LOCA"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "={{ $json.sheet_name }}",
+                    "mode": "name"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                920,
+                200
+            ],
+            "id": "get-all-rows",
+            "name": "Get All Rows",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "iv02DVFnRVjsTXIZ",
+                    "name": "Google Sheets account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "convert-ingreso",
+                            "name": "INGRESO",
+                            "type": "number",
+                            "value": "={{ $json.INGRESO ? parseFloat(String($json.INGRESO).replace(/\\$/g, '').replace(/\\./g, '').replace(/,/g, '.').trim()) || 0 : 0 }}"
+                        },
+                        {
+                            "id": "convert-egreso",
+                            "name": "EGRESO",
+                            "type": "number",
+                            "value": "={{ $json.EGRESO ? parseFloat(String($json.EGRESO).replace(/\\$/g, '').replace(/\\./g, '').replace(/,/g, '.').trim()) || 0 : 0 }}"
+                        },
+                        {
+                            "id": "convert-saldo",
+                            "name": "SALDO",
+                            "type": "number",
+                            "value": "={{ $json.SALDO ? parseFloat(String($json.SALDO).replace(/\\$/g, '').replace(/\\./g, '').replace(/,/g, '.').trim()) || 0 : 0 }}"
+                        },
+                        {
+                            "id": "clean-fecha",
+                            "name": "FECHA",
+                            "type": "string",
+                            "value": "={{ $json.FECHA ? String($json.FECHA).trim() : '' }}"
+                        },
+                        {
+                            "id": "clean-descripcion",
+                            "name": "DESCRIPCION / DETALLE",
+                            "type": "string",
+                            "value": "={{ $json['DESCRIPCION / DETALLE'] ? String($json['DESCRIPCION / DETALLE']).trim() : '' }}"
+                        },
+                        {
+                            "id": "clean-categoria",
+                            "name": "CATEGORIA",
+                            "type": "string",
+                            "value": "={{ $json.CATEGORIA ? String($json.CATEGORIA).trim() : '' }}"
+                        },
+                        {
+                            "id": "clean-comentario",
+                            "name": "COMENTARIO",
+                            "type": "string",
+                            "value": "={{ $json.COMENTARIO ? String($json.COMENTARIO).trim() : '' }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "clean-data",
+            "name": "Clean & Convert Data",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                1140,
+                200
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "has-filter",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists"
+                            },
+                            "leftValue": "={{ $('Execute Workflow Trigger').item.json.filter_desc }}"
+                        },
+                        {
+                            "id": "filter-not-empty",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEmpty"
+                            },
+                            "leftValue": "={{ $('Execute Workflow Trigger').item.json.filter_desc }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "check-filter-needed",
+            "name": "Filter Needed?",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                1360,
+                200
+            ],
+            "typeVersion": 2.2
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.openai.com/v1/chat/completions",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openAiApi",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Eres un experto en JavaScript para filtrado de datos.\\n\\nCONTEXTO:\\nEstás filtrando registros de pagos de 'Tu Gatita Loca'.\\nColumnas: FECHA, DESCRIPCION / DETALLE, INGRESO, EGRESO, SALDO, CATEGORIA, COMENTARIO\\n\\nCARACTERÍSTICAS DE LOS DATOS:\\n- FECHA usa formatos como '10-ene', '25-mar'\\n- COMENTARIO contiene fechas completas o meses (ej: 'PAGO ENERO', '05/01/2024')\\n\\nOBJETIVO:\\nGenerar una condición JavaScript booleana para filtrar el objeto 'row'.\\n\\nREGLAS ESTRICTAS:\\n1. BÚSQUEDA DE FECHAS: Si el usuario busca un mes (ej: 'Enero'), DEBES buscar en AMBOS:\\n   - row.FECHA (buscar 'ene')\\n   - row.COMENTARIO (buscar 'enero' o '/01/')\\n   Ejemplo: (String(row.FECHA).toLowerCase().includes('ene') || String(row.COMENTARIO).toLowerCase().includes('enero'))\\n\\n2. NOMBRES DE COLUMNAS: Usa notación de corchetes para 'DESCRIPCION / DETALLE'\\n\\n3. BÚSQUEDA FLEXIBLE: Usa .toLowerCase() e .includes() para matchear parcialmente\\n\\n4. MÚLTIPLES TÉRMINOS: Si hay varios términos (ej: 'luz enero'), haz AND de condiciones\\n\\nEJEMPLOS:\\nUsuario: 'Pagos de enero'\\nCódigo: (String(row.FECHA).toLowerCase().includes('ene') || String(row.COMENTARIO).toLowerCase().includes('enero'))\\n\\nUsuario: 'Gastos de luz en marzo'\\nCódigo: (String(row['DESCRIPCION / DETALLE']).toLowerCase().includes('luz')) && (String(row.FECHA).toLowerCase().includes('mar') || String(row.COMENTARIO).toLowerCase().includes('marzo'))\\n\\nUsuario: 'Arriendo'\\nCódigo: String(row['DESCRIPCION / DETALLE']).toLowerCase().includes('arriendo') || String(row.CATEGORIA).toLowerCase().includes('arriendo')\\n\\nDevuelve SOLO el código JavaScript, sin explicaciones.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $('Execute Workflow Trigger').item.json.filter_desc }}\"\n    }\n  ],\n  \"response_format\": {\n    \"type\": \"json_schema\",\n    \"json_schema\": {\n      \"name\": \"filter_code\",\n      \"schema\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"filter\": {\n            \"type\": \"string\",\n            \"description\": \"Código JavaScript que retorna true o false. Ejemplo: row.INGRESO > 100\"\n          }\n        },\n        \"required\": [\"filter\"],\n        \"additionalProperties\": false\n      },\n      \"strict\": true\n    }\n  }\n}",
+                "options": {}
+            },
+            "id": "generate-filter-ai",
+            "name": "Generate Filter (AI)",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1580,
+                100
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "runOnceForAllItems",
+                "jsCode": "// Get filter from AI (if available)\nconst filterNode = $node['Generate Filter (AI)']?.json;\nconst aiFilterObj = filterNode?.choices?.[0]?.message?.content;\nlet aiFilter = null;\n\nif (aiFilterObj) {\n  try {\n    const parsed = typeof aiFilterObj === 'string' ? JSON.parse(aiFilterObj) : aiFilterObj;\n    aiFilter = parsed.filter;\n  } catch (e) {\n    console.log('No AI filter available');\n  }\n}\n\n// Get cleaned data from previous node\nconst allRows = $input.all();\n\n// If no filter, return all rows\nif (!aiFilter) {\n  return allRows;\n}\n\n// Apply filter\nconst filtered = allRows.filter(item => {\n  const row = item.json;\n  try {\n    return eval(aiFilter);\n  } catch (e) {\n    console.error('Filter error:', e.message);\n    return false;\n  }\n});\n\nreturn filtered;"
+            },
+            "id": "apply-filter",
+            "name": "Apply Filter",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                1800,
+                200
+            ],
+            "typeVersion": 2
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "format-response",
+                            "name": "result",
+                            "type": "object",
+                            "value": "={{ { \n  success: true, \n  empresa: $('Execute Workflow Trigger').item.json.sheet_name,\n  total_registros: $items().length,\n  registros: $items().map(item => item.json)\n} }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "format-search-response",
+            "name": "Format Response",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                2020,
+                200
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.openai.com/v1/threads",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openAiApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "OpenAI-Beta",
+                            "value": "assistants=v2"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "create-thread",
+            "name": "Create Thread",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                920,
+                500
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://api.openai.com/v1/threads/{{ $('Create Thread').item.json.id }}/messages",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openAiApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "OpenAI-Beta",
+                            "value": "assistants=v2"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "role",
+                            "value": "user"
+                        },
+                        {
+                            "name": "content",
+                            "value": "=Solicitud: {{ $('Execute Workflow Trigger').item.json.query.request }}\n\nDatos:\n{{ $('Execute Workflow Trigger').item.json.query.data }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-message",
+            "name": "Send Message",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1140,
+                500
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://api.openai.com/v1/threads/{{ $('Create Thread').item.json.id }}/runs",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openAiApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "OpenAI-Beta",
+                            "value": "assistants=v2"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "assistant_id",
+                            "value": "asst_PGUuvzEGJWOE8p8vwV56INLO"
+                        },
+                        {
+                            "name": "stream",
+                            "value": "={{ true }}"
+                        },
+                        {
+                            "name": "tool_choice",
+                            "value": "={{ {\"type\": \"code_interpreter\"} }}"
+                        },
+                        {
+                            "name": "tools",
+                            "value": "={{ [{\"type\": \"code_interpreter\"}] }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "run-assistant",
+            "name": "Run Assistant",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1360,
+                500
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "=https://api.openai.com/v1/threads/{{ $('Create Thread').item.json.id }}/messages",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openAiApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "OpenAI-Beta",
+                            "value": "assistants=v2"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "get-messages",
+            "name": "Get Messages",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1580,
+                500
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 2
+                    },
+                    "combinator": "or",
+                    "conditions": [
+                        {
+                            "id": "has-attachment",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists"
+                            },
+                            "leftValue": "={{ $json.data[0].attachments[0].file_id }}"
+                        },
+                        {
+                            "id": "has-image",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists"
+                            },
+                            "leftValue": "={{ $json.data[0].content.find(x=>x.type==\"image_file\")?.image_file?.file_id }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "check-file-exists",
+            "name": "Has File?",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                1800,
+                500
+            ],
+            "typeVersion": 2.2
+        },
+        {
+            "parameters": {
+                "url": "=https://api.openai.com/v1/files/{{ $json.data[0].attachments[0]?.file_id ?? $json.data[0].content.find(x=>x.type==\"image_file\")?.image_file.file_id }}/content",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "openAiApi",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "OpenAI-Beta",
+                            "value": "assistants=v2"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "download-file",
+            "name": "Download File",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                2020,
+                600
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://tmpfiles.org/api/v1/upload",
+                "sendBody": true,
+                "contentType": "multipart-form-data",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "parameterType": "formBinaryData",
+                            "name": "file",
+                            "inputDataFieldName": "data"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "upload-file",
+            "name": "Upload to tmpfiles",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                2240,
+                600
+            ],
+            "typeVersion": 4.2,
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "file-url",
+                            "name": "result",
+                            "type": "object",
+                            "value": "={{ { \n  success: true,\n  type: 'file',\n  url: $json.data.url.replace('org/', 'org/dl/'),\n  message: $('Get Messages').item.json.data[0].content[0].text.value\n} }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "format-file-response",
+            "name": "Format File Response",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                2460,
+                600
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "text-response",
+                            "name": "result",
+                            "type": "object",
+                            "value": "={{ {\n  success: true,\n  type: 'text',\n  message: $json.data[0].content[0].text.value\n} }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "format-text-response",
+            "name": "Format Text Response",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                2020,
+                400
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('Execute Workflow Trigger').item.json.accion }}",
+                                        "rightValue": "CREAR"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "crear"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('Execute Workflow Trigger').item.json.accion }}",
+                                        "rightValue": "ACTUALIZAR"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "actualizar"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('Execute Workflow Trigger').item.json.accion }}",
+                                        "rightValue": "MARCAR_PAGADO"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "marcar"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "route-register-action",
+            "name": "Route Register Action",
+            "type": "n8n-nodes-base.switch",
+            "position": [
+                920,
+                700
+            ],
+            "typeVersion": 3.2
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "documentId": {
+                    "__rl": true,
+                    "value": "19yF1yOKLuhuQTXQdfWZhzz88HqOfAcDjR7iqY12hN4c",
+                    "mode": "list",
+                    "cachedResultName": "REGISTRO DE PAGOS TU GATITA LOCA"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "={{ $json.sheet_name }}",
+                    "mode": "name"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "FECHA": "={{ $json.datos.fecha }}",
+                        "DESCRIPCION / DETALLE": "={{ $json.datos.descripcion }}",
+                        "INGRESO": "={{ $json.datos.tipo === 'INGRESO' ? String($json.datos.monto) : '' }}",
+                        "EGRESO": "={{ $json.datos.tipo === 'EGRESO' ? String($json.datos.monto) : '' }}",
+                        "SALDO": "",
+                        "CATEGORIA": "={{ $json.datos.categoria || '' }}",
+                        "COMENTARIO": "={{ $json.datos.comentario || '' }}"
+                    }
+                },
+                "options": {
+                    "useAppend": true
+                }
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                1140,
+                600
+            ],
+            "id": "create-row",
+            "name": "Create Row",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "iv02DVFnRVjsTXIZ",
+                    "name": "Google Sheets account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "documentId": {
+                    "__rl": true,
+                    "value": "19yF1yOKLuhuQTXQdfWZhzz88HqOfAcDjR7iqY12hN4c",
+                    "mode": "list",
+                    "cachedResultName": "REGISTRO DE PAGOS TU GATITA LOCA"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "={{ $json.sheet_name }}",
+                    "mode": "name"
+                },
+                "filtersUI": {
+                    "values": [
+                        {
+                            "lookupColumn": "FECHA",
+                            "lookupValue": "={{ $json.filtro.fecha }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                1140,
+                700
+            ],
+            "id": "find-row-to-update",
+            "name": "Find Row to Update",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "iv02DVFnRVjsTXIZ",
+                    "name": "Google Sheets account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "documentId": {
+                    "__rl": true,
+                    "value": "19yF1yOKLuhuQTXQdfWZhzz88HqOfAcDjR7iqY12hN4c",
+                    "mode": "list",
+                    "cachedResultName": "REGISTRO DE PAGOS TU GATITA LOCA"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "={{ $json.sheet_name }}",
+                    "mode": "name"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "DESCRIPCION / DETALLE": "={{ $input.first().json.datos.descripcion || $json['DESCRIPCION / DETALLE'] }}",
+                        "CATEGORIA": "={{ $input.first().json.datos.categoria || $json.CATEGORIA }}",
+                        "COMENTARIO": "={{ $input.first().json.datos.comentario || $json.COMENTARIO }}"
+                    }
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                1360,
+                700
+            ],
+            "id": "update-row",
+            "name": "Update Row",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "iv02DVFnRVjsTXIZ",
+                    "name": "Google Sheets account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "documentId": {
+                    "__rl": true,
+                    "value": "19yF1yOKLuhuQTXQdfWZhzz88HqOfAcDjR7iqY12hN4c",
+                    "mode": "list",
+                    "cachedResultName": "REGISTRO DE PAGOS TU GATITA LOCA"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "={{ $json.sheet_name }}",
+                    "mode": "name"
+                },
+                "filtersUI": {
+                    "values": [
+                        {
+                            "lookupColumn": "FECHA",
+                            "lookupValue": "={{ $json.filtro.fecha }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                1140,
+                800
+            ],
+            "id": "find-row-to-mark",
+            "name": "Find Row to Mark",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "iv02DVFnRVjsTXIZ",
+                    "name": "Google Sheets account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "documentId": {
+                    "__rl": true,
+                    "value": "19yF1yOKLuhuQTXQdfWZhzz88HqOfAcDjR7iqY12hN4c",
+                    "mode": "list",
+                    "cachedResultName": "REGISTRO DE PAGOS TU GATITA LOCA"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "={{ $json.sheet_name }}",
+                    "mode": "name"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "COMENTARIO": "={{ ($json.COMENTARIO || '') + ' ✅ PROCESADO' }}"
+                    }
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                1360,
+                800
+            ],
+            "id": "mark-as-paid",
+            "name": "Mark as Paid",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "iv02DVFnRVjsTXIZ",
+                    "name": "Google Sheets account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "success-response",
+                            "name": "result",
+                            "type": "object",
+                            "value": "={{ {\n  success: true,\n  accion: $input.first().json.accion,\n  empresa: $input.first().json.sheet_name,\n  message: $input.first().json.accion === 'CREAR' ? '✅ Registro creado exitosamente' : ($input.first().json.accion === 'ACTUALIZAR' ? '✅ Registro actualizado exitosamente' : '✅ Registro marcado como procesado'),\n  registro_afectado: $json\n} }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "format-register-response",
+            "name": "Format Register Response",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                1580,
+                700
+            ],
+            "typeVersion": 3.4
+        }
+    ],
+    "connections": {
+        "Execute Workflow Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Route by Command",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route by Command": {
+            "main": [
+                [
+                    {
+                        "node": "Get All Rows",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Create Thread",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Route Register Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get All Rows": {
+            "main": [
+                [
+                    {
+                        "node": "Clean & Convert Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Clean & Convert Data": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Needed?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Needed?": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Filter (AI)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Apply Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Filter (AI)": {
+            "main": [
+                [
+                    {
+                        "node": "Apply Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Apply Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Format Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Thread": {
+            "main": [
+                [
+                    {
+                        "node": "Send Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Message": {
+            "main": [
+                [
+                    {
+                        "node": "Run Assistant",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Run Assistant": {
+            "main": [
+                [
+                    {
+                        "node": "Get Messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Messages": {
+            "main": [
+                [
+                    {
+                        "node": "Has File?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has File?": {
+            "main": [
+                [
+                    {
+                        "node": "Download File",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Format Text Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Download File": {
+            "main": [
+                [
+                    {
+                        "node": "Upload to tmpfiles",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload to tmpfiles": {
+            "main": [
+                [
+                    {
+                        "node": "Format File Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route Register Action": {
+            "main": [
+                [
+                    {
+                        "node": "Create Row",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Find Row to Update",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Find Row to Mark",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Row": {
+            "main": [
+                [
+                    {
+                        "node": "Format Register Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Find Row to Update": {
+            "main": [
+                [
+                    {
+                        "node": "Update Row",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Row": {
+            "main": [
+                [
+                    {
+                        "node": "Format Register Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Find Row to Mark": {
+            "main": [
+                [
+                    {
+                        "node": "Mark as Paid",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mark as Paid": {
+            "main": [
+                [
+                    {
+                        "node": "Format Register Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": []
+}

@@ -1,0 +1,616 @@
+{
+    "name": "GATITA CHAT WEB (Multimodal Premium)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "gatita-chat",
+                "responseMode": "responseNode",
+                "options": {
+                    "allowedOrigins": "*"
+                }
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "position": [
+                -400,
+                400
+            ],
+            "webhookId": "gatita-chat-webhook",
+            "typeVersion": 2
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "has-file",
+                            "leftValue": "={{ $json.body.file }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "object",
+                                "operation": "exists",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -160,
+                400
+            ],
+            "id": "check-file",
+            "name": "Has File?"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "extract-message",
+                            "name": "chatInput",
+                            "value": "={{ $json.body.message }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "extract-session",
+                            "name": "sessionId",
+                            "value": "={{ $json.body.sessionId }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "extract-company",
+                            "name": "company",
+                            "value": "={{ $json.body.company || '' }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "prepare-text-input",
+            "name": "Prepare Text Input",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                80,
+                320
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Detectar tipo de archivo\nconst file = $input.item.json.body.file;\nconst fileName = file.name.toLowerCase();\n\nlet fileType = 'unknown';\n\nif (fileName.match(/\\.(jpg|jpeg|png|gif|webp)$/)) {\n  fileType = 'image';\n} else if (fileName.match(/\\.(mp3|wav|webm|ogg|m4a)$/)) {\n  fileType = 'audio';\n} else if (fileName.match(/\\.(pdf)$/)) {\n  fileType = 'pdf';\n} else if (fileName.match(/\\.(doc|docx)$/)) {\n  fileType = 'document';\n}\n\nreturn {\n  json: {\n    fileType,\n    fileName: file.name,\n    fileData: file.data,\n    message: $input.item.json.body.message,\n    sessionId: $input.item.json.body.sessionId\n  }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                80,
+                480
+            ],
+            "id": "detect-file-type",
+            "name": "Detect File Type"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "is-audio",
+                                        "leftValue": "={{ $json.fileType }}",
+                                        "rightValue": "audio",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "AUDIO"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "is-image",
+                                        "leftValue": "={{ $json.fileType }}",
+                                        "rightValue": "image",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "IMAGE"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "is-pdf",
+                                        "leftValue": "={{ $json.fileType }}",
+                                        "rightValue": "pdf",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "PDF"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.4,
+            "position": [
+                320,
+                480
+            ],
+            "id": "route-by-file-type",
+            "name": "Route by File Type"
+        },
+        {
+            "parameters": {
+                "resource": "audio",
+                "operation": "transcribe",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.8,
+            "position": [
+                560,
+                360
+            ],
+            "id": "transcribe-audio",
+            "name": "Transcribe Audio",
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4o-mini",
+                    "mode": "list",
+                    "cachedResultName": "gpt-4o-mini"
+                },
+                "builtInTools": {},
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.3,
+            "position": [
+                560,
+                600
+            ],
+            "id": "openai-vision-model",
+            "name": "OpenAI Vision Model",
+            "credentials": {
+                "openAiApi": {
+                    "id": "FoVz0s17UMLChKIo",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "Analiza la imagen y extrae:\n1. Proveedor/Razón Social\n2. Fecha (DD-MM-YYYY)\n3. Monto Total\n4. N° Documento\n\nDevuelve: Proveedor: X, Fecha: Y, Monto: Z, Documento: W",
+                "options": {
+                    "systemMessage": "Eres un OCR especializado en comprobantes de pago chilenos."
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3.1,
+            "position": [
+                560,
+                480
+            ],
+            "id": "ai-vision-agent",
+            "name": "AI Vision Agent"
+        },
+        {
+            "parameters": {
+                "operation": "pdf",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.extractFromFile",
+            "typeVersion": 1.1,
+            "position": [
+                560,
+                720
+            ],
+            "id": "extract-pdf",
+            "name": "Extract PDF"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "unify-input",
+                            "name": "chatInput",
+                            "value": "={{ $json.text || $json.output || $json.message || $json.chatInput || 'Archivo procesado' }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "unify-session",
+                            "name": "sessionId",
+                            "value": "={{ $json.sessionId }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "unify-company",
+                            "name": "company",
+                            "value": "={{ $json.company || '' }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "unify-input",
+            "name": "Unify Input",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                800,
+                400
+            ]
+        },
+        {
+            "agent": "openAiFunctionsAgent",
+            "promptType": "define",
+            "text": "={{ $json.chatInput }}",
+            "options": {
+                "systemMessage": "={{ \"Eres \\\"GatitaBot\\\", el asistente contable experto del holding \\\"Tu Gatita Loca\\\".\\n\\n📋 EMPRESA ACTUAL: \" + ($json.company ? $json.company : \"NO SELECCIONADA\") + \"\\n\\n📋 EMPRESAS DISPONIBLES:\\n1. CASAZ\\n2. ROBUSTA\\n3. ARPINO\\n4. CB\\n\\n📊 ESTRUCTURA DE DATOS (Google Sheets):\\nCada empresa tiene las siguientes columnas:\\n- FOLIO: Número de folio del registro (OPCIONAL)\\n- RUT: RUT del proveedor/cliente (OPCIONAL)\\n- RAZON SOCIAL: Nombre o razón social del proveedor/cliente (REQUERIDO)\\n- SALDO PENDIENTE: Monto del saldo pendiente (REQUERIDO)\\n- COMENTARIO: Notas o comentarios adicionales (OPCIONAL)\\n- GLOSA: Categoría o glosa del registro (OPCIONAL)\\n\\n🎯 REGLAS DE INTERACCIÓN:\\n\\n1. **Identificación de Empresa (CRÍTICO)**:\\n   - SI YA TIENES LA EMPRESA (\" + ($json.company ? $json.company : \"NO SELECCIONADA\") + \"), úsala DIRECTAMENTE en todas las herramientas\\n   - NO preguntes por la empresa si ya la tienes\\n   - Si NO tienes empresa Y el usuario NO la menciona, pregunta: \\\"¿De qué empresa? (CASAZ, ROBUSTA, ARPINO o CB)\\\"\\n   - NO registres nada hasta tener la empresa confirmada\\n\\n2. **Búsquedas (Herramienta: search)**:\\n   - Usa la herramienta \\\"search\\\" para consultar registros\\n   - Usa \" + ($json.company ? $json.company : \"sheet_name\") + \" como sheet_name si ya está disponible\\n   - Puedes buscar por: razón social, RUT, folio, glosa, comentarios\\n\\n3. **Registro de Datos (Herramienta: register)** ⚠️ REGLAS CRÍTICAS:\\n   \\n   a) **Campos REQUERIDOS**:\\n      - sheet_name: Usa \" + ($json.company ? $json.company : \"sheet_name\") + \" si está disponible, sino pregunta\\n      - accion: CREAR\\n      - RAZON SOCIAL: Nombre del proveedor/cliente\\n      - SALDO PENDIENTE: Monto (convierte \\\"$50.000\\\" a 50000)\\n   \\n   b) **Campos OPCIONALES** (NO preguntes si el usuario no los menciona):\\n      - FOLIO: Si el usuario NO lo menciona, envía vacío (\\\"\\\")\\n      - RUT: Si el usuario NO lo menciona, envía vacío (\\\"\\\")\\n      - COMENTARIO: Si el usuario NO lo menciona, envía vacío (\\\"\\\")\\n      - GLOSA: Si el usuario NO lo menciona, envía vacío (\\\"\\\")\\n   \\n   c) **Confirmación del usuario**:\\n      - Muestra un resumen de lo que vas a registrar\\n      - Pregunta: \\\"¿Confirmas que quieres CREAR este registro?\\\"\\n      - Solo ejecuta si el usuario confirma (\\\"Sí\\\", \\\"Confirmo\\\", \\\"Dale\\\", \\\"Ok\\\")\\n\\n💡 IMPORTANTE:\\n- SI YA TIENES \" + ($json.company ? $json.company : \"EMPRESA\") + \", úsala SIEMPRE sin preguntar\\n- NUNCA pidas FOLIO, RUT, COMENTARIO o GLOSA si el usuario no los menciona\\n- Solo pide RAZON SOCIAL y SALDO PENDIENTE\\n- Envía campos vacíos (\\\"\\\") para los opcionales no proporcionados\\n- SIEMPRE confirma antes de registrar\" }},",
+                "maxIterations": 15
+            }
+        },
+        "id": "ai-agent-main",
+        "name": "AI Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "position": [
+            1040,
+            400
+        ],
+        "typeVersion": 1.6
+    },
+    {
+        "parameters": {
+            "options": {}
+        },
+        "id": "openai-chat-model",
+        "name": "OpenAI Chat Model",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "position": [
+            1040,
+            560
+        ],
+        "typeVersion": 1,
+        "credentials": {
+            "openAiApi": {
+                "id": "FoVz0s17UMLChKIo",
+                "name": "OpenAi account"
+            }
+        }
+    },
+    {
+        "parameters": {
+            "sessionIdType": "customKey",
+            "sessionKey": "={{ $json.sessionId }}"
+        },
+        "id": "window-buffer-memory",
+        "name": "Window Buffer Memory",
+        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+        "position": [
+            1040,
+            720
+        ],
+        "typeVersion": 1.3
+    },
+    {
+        "parameters": {
+            "name": "search",
+            "description": "Busca registros de pagos en Google Sheets.",
+            "workflowId": {
+                "__rl": true,
+                "value": "NHngBgZ3GCrfj0SN",
+                "mode": "list",
+                "cachedResultName": "HERRAMIENTAS GATITA"
+            },
+            "fields": {
+                "values": [
+                    {
+                        "name": "command",
+                        "stringValue": "search"
+                    }
+                ]
+            },
+            "specifyInputSchema": true,
+            "schemaType": "manual",
+            "inputSchema": "{\"type\":\"object\",\"properties\":{\"sheet_name\":{\"type\":\"string\",\"enum\":[\"CASAZ\",\"ROBUSTA\",\"ARPINO\",\"CB\"]},\"filter_desc\":{\"type\":\"string\"}},\"required\":[\"sheet_name\"]}"
+        },
+        "id": "tool-search",
+        "name": "Search records",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "position": [
+            1280,
+            320
+        ],
+        "typeVersion": 1.2
+    },
+    {
+        "parameters": {
+            "name": "register",
+            "description": "Registra, actualiza o marca registros en Google Sheets.",
+            "workflowId": {
+                "__rl": true,
+                "value": "NHngBgZ3GCrfj0SN",
+                "mode": "list",
+                "cachedResultName": "HERRAMIENTAS GATITA"
+            },
+            "fields": {
+                "values": [
+                    {
+                        "name": "command",
+                        "stringValue": "register"
+                    }
+                ]
+            },
+            "specifyInputSchema": true,
+            "schemaType": "manual",
+            "inputSchema": "{\"type\":\"object\",\"properties\":{\"sheet_name\":{\"type\":\"string\",\"enum\":[\"CASAZ\",\"ROBUSTA\",\"ARPINO\",\"CB\"]},\"accion\":{\"type\":\"string\",\"enum\":[\"CREAR\",\"ACTUALIZAR\",\"MARCAR_PAGADO\"]},\"FOLIO\":{\"type\":\"string\"},\"RUT\":{\"type\":\"string\"},\"RAZON SOCIAL\":{\"type\":\"string\"},\"SALDO PENDIENTE\":{\"type\":\"number\"},\"COMENTARIO\":{\"type\":\"string\"},\"GLOSA\":{\"type\":\"string\"}},\"required\":[\"sheet_name\",\"accion\"]}"
+        },
+        "id": "tool-register",
+        "name": "Register records",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "position": [
+            1280,
+            480
+        ],
+        "typeVersion": 1.2
+    },
+    {
+        "parameters": {
+            "respondWith": "json",
+            "responseBody": "={{ { output: $json.output, success: true } }}",
+            "options": {}
+        },
+        "id": "respond-to-webhook",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "position": [
+            1280,
+            400
+        ],
+        "typeVersion": 1.1
+    }
+],
+"connections": {
+    "Webhook": {
+        "main": [
+            [
+                {
+                    "node": "Has File?",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Has File?": {
+        "main": [
+            [
+                {
+                    "node": "Detect File Type",
+                    "type": "main",
+                    "index": 0
+                }
+            ],
+            [
+                {
+                    "node": "Prepare Text Input",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Detect File Type": {
+        "main": [
+            [
+                {
+                    "node": "Route by File Type",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Route by File Type": {
+        "main": [
+            [
+                {
+                    "node": "Transcribe Audio",
+                    "type": "main",
+                    "index": 0
+                }
+            ],
+            [
+                {
+                    "node": "AI Vision Agent",
+                    "type": "main",
+                    "index": 0
+                }
+            ],
+            [
+                {
+                    "node": "Extract PDF",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Transcribe Audio": {
+        "main": [
+            [
+                {
+                    "node": "Unify Input",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "AI Vision Agent": {
+        "main": [
+            [
+                {
+                    "node": "Unify Input",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Extract PDF": {
+        "main": [
+            [
+                {
+                    "node": "Unify Input",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Prepare Text Input": {
+        "main": [
+            [
+                {
+                    "node": "Unify Input",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Unify Input": {
+        "main": [
+            [
+                {
+                    "node": "AI Agent",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "AI Agent": {
+        "main": [
+            [
+                {
+                    "node": "Respond to Webhook",
+                    "type": "main",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "OpenAI Chat Model": {
+        "ai_languageModel": [
+            [
+                {
+                    "node": "AI Agent",
+                    "type": "ai_languageModel",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "OpenAI Vision Model": {
+        "ai_languageModel": [
+            [
+                {
+                    "node": "AI Vision Agent",
+                    "type": "ai_languageModel",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Window Buffer Memory": {
+        "ai_memory": [
+            [
+                {
+                    "node": "AI Agent",
+                    "type": "ai_memory",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Search records": {
+        "ai_tool": [
+            [
+                {
+                    "node": "AI Agent",
+                    "type": "ai_tool",
+                    "index": 0
+                }
+            ]
+        ]
+    },
+    "Register records": {
+        "ai_tool": [
+            [
+                {
+                    "node": "AI Agent",
+                    "type": "ai_tool",
+                    "index": 0
+                }
+            ]
+        ]
+    }
+},
+"active": false,
+"settings": {
+    "executionOrder": "v1"
+}
+}
