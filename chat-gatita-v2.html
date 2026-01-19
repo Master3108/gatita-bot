@@ -826,7 +826,11 @@
 
             // Prepare data
             const formData = new FormData();
-            formData.append('message', message || 'Procesa este archivo');
+
+            // Inyectar contexto de la empresa directamente en el mensaje para asegurar que la IA lo vea
+            const messageWithContext = `[Contexto: Empresa activa = ${currentCompany}] ${message || 'Procesa este archivo'}`;
+
+            formData.append('message', messageWithContext);
             formData.append('sessionId', getSessionId());
             formData.append('company', currentCompany);
 
