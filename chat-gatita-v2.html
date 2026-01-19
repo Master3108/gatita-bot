@@ -622,6 +622,8 @@
             <div class="company-selector" onclick="changeCompany()" id="companyDisplay">
                 Seleccionar Empresa
             </div>
+            <div style="position: absolute; bottom: 5px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.5);">
+                v2.2</div>
         </div>
 
         <div class="chat-messages" id="chatMessages">
@@ -828,7 +830,8 @@
             const formData = new FormData();
 
             // Inyectar contexto de la empresa directamente en el mensaje para asegurar que la IA lo vea
-            const messageWithContext = `[Contexto: Empresa activa = ${currentCompany}] ${message || 'Procesa este archivo'}`;
+            // Inyectar contexto de la empresa directamente en el mensaje para asegurar que la IA lo vea
+            const messageWithContext = `ESTOY TRABAJANDO CON LA EMPRESA: ${currentCompany}. MI SOLICITUD ES: ${message || 'Procesa este archivo'}`;
 
             formData.append('message', messageWithContext);
             formData.append('sessionId', getSessionId());
